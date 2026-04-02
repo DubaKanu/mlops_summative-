@@ -6,6 +6,7 @@ import plotly.graph_objects as go
 import os
 import requests
 
+# Force internal container routing by default (Render only exposes one public port)
 API_URL = os.environ.get("API_URL", "http://127.0.0.1:8000")
 DATA_DIR = os.environ.get("DATA_DIR", "data/train")
 CLASS_NAMES = ["Potato___Early_blight", "Potato___Late_blight", "Potato___healthy"]
@@ -17,7 +18,7 @@ st.title("Potato Leaf Disease Classifier")
 with st.sidebar:
     st.header("Model Status")
     try:
-        response = requests.get(f"{API_URL}/api/status", timeout=5)
+        response = requests.get(f"{API_URL}/api/status", timeout=15)
         if response.status_code == 200:
             info = response.json()
             if info.get("status") == "online":
@@ -28,9 +29,11 @@ with st.sidebar:
             else:
                 st.error("Model Not Found")
         else:
-            st.error("Model Not Found")
-    except Exception:
-        st.warning("Backend unreachable")
+            st.error(f"Backend Error: {response.status_code}")
+    except requests.exceptions.ConnectionError:
+        st.warning("⏳ Backend is starting up... please wait a few seconds and refresh.")
+    except Exception as e:
+        st.warning(f"Backend unreachable: {e}")
     st.divider()
     st.caption("Potato Disease MLOps Pipeline")
 
@@ -59,6 +62,11 @@ with tab1:
                             st.error(f"Prediction failed: {result['error']}")
                             st.stop()
                             
+                        
+                        if "error" in result:
+                            st.error(f"Prediction failed: {result['error']}")
+                            st.stop()
+                            
                         label = result["class"].replace("___", " ")
                         conf = result["confidence"]
                         if "healthy" in result["class"].lower():
@@ -81,9 +89,11 @@ with tab1:
                         st.plotly_chart(fig, use_container_width=True)
                     else:
                         st.error(f"Prediction failed: {response.text}")
+                except requests.exceptions.ConnectionError:
+                    st.error("⏳ Backend API is unreachable. It may still be loading TensorFlow. Please wait a few seconds and try again.")
                 except Exception as e:
                     st.error(f"Prediction failed: {e}")
-                    st.info("Make sure the backend API is running.")
+                    st.info("Make sure the backend API is running without errors.")
 
 # ── Tab 2: Visualizations ──────────────────────────────────────────────────────
 with tab2:
