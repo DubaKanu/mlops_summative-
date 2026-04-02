@@ -20,28 +20,27 @@ DATA_DIR = os.environ.get("DATA_DIR", "data/train")
 CLASS_NAMES = ["Potato___Early_blight", "Potato___Late_blight", "Potato___healthy"]
 CLASS_LABELS = ["Early Blight", "Late Blight", "Healthy"]
 
-st.set_page_config(page_title="Potato Disease Classifier", page_icon="🥔", layout="wide")
-st.title("🥔 Potato Leaf Disease Classifier")
+st.set_page_config(page_title="Potato Disease Classifier", layout="wide")
+st.title("Potato Leaf Disease Classifier")
 
-# ── Sidebar: Model Uptime ──────────────────────────────────────────────────────
 with st.sidebar:
-    st.header("📡 Model Status")
+    st.header("Model Status")
     model_exists = os.path.exists(MODEL_PATH)
     if model_exists:
         mtime = os.path.getmtime(MODEL_PATH)
         last_trained = time.strftime("%Y-%m-%d %H:%M", time.localtime(mtime))
         size_mb = round(os.path.getsize(MODEL_PATH) / (1024 * 1024), 2)
-        st.success("🟢 Model Online")
+        st.success("Model Online")
         st.metric("Last Trained", last_trained)
         st.metric("Model Size", f"{size_mb} MB")
         st.metric("Classes", len(CLASS_NAMES))
     else:
-        st.error("🔴 Model Not Found")
+        st.error("Model Not Found")
 
     st.divider()
     st.caption("Potato Disease MLOps Pipeline")
 
-tab1, tab2, tab3, tab4 = st.tabs(["🔍 Predict", "📊 Visualizations", "📤 Upload Data", "🔁 Retrain"])
+tab1, tab2, tab3, tab4 = st.tabs(["Predict", "Visualizations", "Upload Data", "Retrain"])
 
 # ── Tab 1: Prediction ──────────────────────────────────────────────────────────
 with tab1:
@@ -62,9 +61,9 @@ with tab1:
                     conf = result["confidence"]
 
                     if "healthy" in result["class"].lower():
-                        st.success(f"✅ **{label}**")
+                        st.success(f"Prediction: {label}")
                     else:
-                        st.error(f"⚠️ **{label}**")
+                        st.error(f"Prediction: {label}")
 
                     st.metric("Confidence", f"{conf}%")
                     st.divider()
@@ -171,7 +170,7 @@ with tab3:
     bulk_files = st.file_uploader("Upload images (bulk)", type=["jpg", "jpeg", "png"],
                                   accept_multiple_files=True)
 
-    if bulk_files and st.button("💾 Save Uploaded Images"):
+    if bulk_files and st.button("Save Uploaded Images"):
         save_dir = os.path.join(DATA_DIR, target_class)
         os.makedirs(save_dir, exist_ok=True)
         saved = 0
@@ -180,7 +179,7 @@ with tab3:
             with open(dest, "wb") as out:
                 out.write(f.read())
             saved += 1
-        st.success(f"✅ Saved {saved} image(s) to `{save_dir}`")
+        st.success(f"Saved {saved} image(s) to {save_dir}")
         st.rerun()
 
     st.divider()
@@ -200,7 +199,7 @@ with tab4:
 
     epochs = st.slider("Training Epochs", min_value=1, max_value=20, value=5)
 
-    if st.button("🔁 Start Retraining", type="primary"):
+    if st.button("Start Retraining", type="primary"):
         with st.spinner("Retraining in progress... this may take a few minutes."):
             try:
                 # Trigger the background retraining API
@@ -208,7 +207,7 @@ with tab4:
                 response = requests.post(f"{api_url}/api/retrain", json={"epochs": epochs})
                 
                 if response.status_code == 200:
-                    st.success("✅ " + response.json()["message"])
+                    st.success(response.json()["message"])
                     st.info("You can monitor the server logs to see when training finishes. The model cache will refresh automatically on the next prediction.")
                 else:
                     st.error(f"Failed to trigger retraining: {response.text}")

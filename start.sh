@@ -10,9 +10,9 @@ mkdir -p /var/data/models
 if [ ! -f /var/data/models/plant_disease_model.h5 ]; then
     if [ -f /app/models/plant_disease_model.h5 ]; then
         cp /app/models/plant_disease_model.h5 /var/data/models/plant_disease_model.h5
-        echo "✅ Initial model copied to persistent disk."
+        echo "Initial model copied to persistent disk."
     else
-        echo "⚠️ No initial model found. Please retrain from the UI."
+        echo "No initial model found. Please retrain from the UI."
     fi
 fi
 
