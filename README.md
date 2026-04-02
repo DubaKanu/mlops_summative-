@@ -41,9 +41,13 @@ mlops_summative--1/
 
 ## ⚙️ Setup Instructions
 
-### 1. Clone the Repository
+### Method 1: Docker Compose (Recommended)
+This is the simplest and most complete way to run the entire application stack, including the UI, the API, and the load testing service.
+
+1.  **Prerequisites:** Ensure you have Docker and Docker Compose installed.
+2.  **Clone the Repository:**
 ```bash
-git clone <your-repo-url>
+git clone https://github.com/your-username/mlops_summative--1.git
 cd mlops_summative--1
 ```
 
