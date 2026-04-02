@@ -48,13 +48,14 @@ with tab1:
 
     if uploaded:
         col1, col2 = st.columns(2)
+        file_bytes = uploaded.read()
         with col1:
-            st.image(uploaded, caption="Uploaded Image", use_column_width=True)
+            st.image(file_bytes, caption="Uploaded Image", use_column_width=True)
 
         with col2:
             with st.spinner("Analyzing..."):
                 try:
-                    files = {"file": (uploaded.name, uploaded.read(), "image/jpeg")}
+                    files = {"file": (uploaded.name, file_bytes, "image/jpeg")}
                     response = requests.post(f"{API_URL}/api/predict", files=files)
                     if response.status_code == 200:
                         result = response.json()
