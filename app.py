@@ -3,18 +3,10 @@ import numpy as np
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
-from PIL import Image
 import os
-import shutil
-import time
-import sys
 import requests
 
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-
 API_URL = os.environ.get("API_URL", "https://mlops-summative-lze9.onrender.com")
-MODEL_PATH = os.environ.get("MODEL_PATH", "models/plant_disease_model.h5")
-
 DATA_DIR = os.environ.get("DATA_DIR", "data/train")
 CLASS_NAMES = ["Potato___Early_blight", "Potato___Late_blight", "Potato___healthy"]
 CLASS_LABELS = ["Early Blight", "Late Blight", "Healthy"]
@@ -34,7 +26,7 @@ with st.sidebar:
             st.metric("Classes", info.get("classes", 3))
         else:
             st.error("Model Not Found")
-    except:
+    except Exception:
         st.warning("Backend unreachable")
     st.divider()
     st.caption("Potato Disease MLOps Pipeline")
@@ -50,13 +42,13 @@ with tab1:
         col1, col2 = st.columns(2)
         file_bytes = uploaded.read()
         with col1:
-            st.image(file_bytes, caption="Uploaded Image", use_column_width=True)
+            st.image(file_bytes, caption="Uploaded Image", use_container_width=True)
 
         with col2:
             with st.spinner("Analyzing..."):
                 try:
                     files = {"file": (uploaded.name, file_bytes, "image/jpeg")}
-                    response = requests.post(f"{API_URL}/api/predict", files=files)
+                    response = requests.post(f"{API_URL}/api/predict", files=files, timeout=30)
                     if response.status_code == 200:
                         result = response.json()
                         label = result["class"].replace("___", " ")
@@ -204,15 +196,11 @@ with tab4:
     if st.button("Start Retraining", type="primary"):
         with st.spinner("Retraining in progress... this may take a few minutes."):
             try:
-                # Trigger the background retraining API
-                api_url = os.environ.get("API_URL", "https://mlops-summative-lze9.onrender.com")
-                response = requests.post(f"{api_url}/api/retrain", json={"epochs": epochs})
-                
+                response = requests.post(f"{API_URL}/api/retrain", json={"epochs": epochs}, timeout=60)
                 if response.status_code == 200:
                     st.success(response.json()["message"])
                     st.info("You can monitor the server logs to see when training finishes. The model cache will refresh automatically on the next prediction.")
                 else:
                     st.error(f"Failed to trigger retraining: {response.text}")
-
             except Exception as e:
                 st.error(f"Retraining failed: {e}")
