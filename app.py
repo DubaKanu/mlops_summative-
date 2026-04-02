@@ -203,7 +203,7 @@ with tab4:
         with st.spinner("Retraining in progress... this may take a few minutes."):
             try:
                 # Trigger the background retraining API
-                api_url = os.environ.get("API_URL", "http://localhost:8000")
+                api_url = os.environ.get("API_URL", "https://mlops-summative-lze9.onrender.com")
                 response = requests.post(f"{api_url}/api/retrain", json={"epochs": epochs})
                 
                 if response.status_code == 200:
