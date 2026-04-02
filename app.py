@@ -6,7 +6,7 @@ import plotly.graph_objects as go
 import os
 import requests
 
-API_URL = os.environ.get("API_URL", "https://mlops-summative-lze9.onrender.com")
+API_URL = os.environ.get("API_URL", "http://localhost:8000")
 DATA_DIR = os.environ.get("DATA_DIR", "data/train")
 CLASS_NAMES = ["Potato___Early_blight", "Potato___Late_blight", "Potato___healthy"]
 CLASS_LABELS = ["Early Blight", "Late Blight", "Healthy"]
@@ -20,10 +20,13 @@ with st.sidebar:
         response = requests.get(f"{API_URL}/api/status", timeout=5)
         if response.status_code == 200:
             info = response.json()
-            st.success("Model Online")
-            st.metric("Last Trained", info.get("last_trained", "N/A"))
-            st.metric("Model Size", info.get("model_size", "N/A"))
-            st.metric("Classes", info.get("classes", 3))
+            if info.get("status") == "online":
+                st.success("Model Online")
+                st.metric("Last Trained", info.get("last_trained", "N/A"))
+                st.metric("Model Size", info.get("model_size", "N/A"))
+                st.metric("Classes", info.get("classes", 3))
+            else:
+                st.error("Model Not Found")
         else:
             st.error("Model Not Found")
     except Exception:
