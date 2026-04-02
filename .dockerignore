@@ -1,0 +1,20 @@
+# Environments
+venv/
+env/
+.venv/
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Git and IDEs
+.git/
+.gitignore
+.vscode/
+.idea/
+.DS_Store
+
+# Jupyter / Testing
+.ipynb_checkpoints/
+notebook/

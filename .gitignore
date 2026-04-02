@@ -1,0 +1,40 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.env
+*.venv
+env/
+venv/
+ENV/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Virtual environments
+.Python
+
+# Distribution
+build/
+dist/
+*.egg-info/
+
+# IDEs
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# macOS
+.DS_Store
+
+# Logs
+*.log
+
+# model artifacts
+models/
+
+# dataset partitions
+data/train/
+data/test/
