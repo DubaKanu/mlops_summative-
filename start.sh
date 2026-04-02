@@ -6,6 +6,14 @@ mkdir -p /var/data/train/Potato___Late_blight
 mkdir -p /var/data/train/Potato___healthy
 mkdir -p /var/data/models
 
+# Copy initial training data to persistent disk if it's empty
+if [ -z "$(ls -A /var/data/train/Potato___healthy 2>/dev/null)" ]; then
+    if [ -d /app/data/train ]; then
+        cp -a /app/data/train/. /var/data/train/
+        echo "Initial training data copied to persistent disk."
+    fi
+fi
+
 # Copy initial model to persistent disk if not already there
 if [ ! -f /var/data/models/plant_disease_model.h5 ]; then
     if [ -f /app/models/plant_disease_model.h5 ]; then

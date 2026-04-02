@@ -6,7 +6,7 @@ import plotly.graph_objects as go
 import os
 import requests
 
-API_URL = os.environ.get("API_URL", "https://mlops-summative-ui.onrender.com")
+API_URL = os.environ.get("API_URL", "http://127.0.0.1:8000")
 DATA_DIR = os.environ.get("DATA_DIR", "data/train")
 CLASS_NAMES = ["Potato___Early_blight", "Potato___Late_blight", "Potato___healthy"]
 CLASS_LABELS = ["Early Blight", "Late Blight", "Healthy"]
@@ -54,6 +54,11 @@ with tab1:
                     response = requests.post(f"{API_URL}/api/predict", files=files, timeout=30)
                     if response.status_code == 200:
                         result = response.json()
+                        
+                        if "error" in result:
+                            st.error(f"Prediction failed: {result['error']}")
+                            st.stop()
+                            
                         label = result["class"].replace("___", " ")
                         conf = result["confidence"]
                         if "healthy" in result["class"].lower():

@@ -46,9 +46,14 @@ def status():
 
 @app.post("/api/predict")
 async def predict_endpoint(file: UploadFile = File(...)):
-    contents = await file.read()
-    result = predict(contents)
-    return result
+    try:
+        contents = await file.read()
+        result = predict(contents)
+        return result
+    except FileNotFoundError as e:
+        return {"error": str(e)}
+    except Exception as e:
+        return {"error": str(e)}
 
 
 @app.post("/api/retrain")
