@@ -107,3 +107,12 @@ Open `http://localhost:8089` in your browser, set the number of users and spawn 
 | Model uptime / status sidebar | ✅ |
 | Dockerized deployment | ✅ |
 | Locust flood simulation | ✅ |
+
+
+![
+[alt text](<Screenshot 2026-03-25 at 12.55.46 AM.png>)
+](<Screenshot 2026-03-25 at 1.01.54 AM.png>)
+![alt text](<Screenshot 2026-03-25 at 12.59.39 AM.png>)
+![alt text](<Screenshot 2026-03-25 at 12.54.34 AM.png>)
+![alt text](<Screenshot 2026-03-25 at 12.40.42 AM.png>)
+![alt text](<Screenshot 2026-03-25 at 12.59.23 AM.png>)

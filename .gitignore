@@ -32,9 +32,6 @@ dist/
 # Logs
 *.log
 
-# model artifacts
-models/
 
 # dataset partitions
-data/train/
 data/test/
