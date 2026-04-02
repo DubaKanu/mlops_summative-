@@ -1,5 +1,4 @@
 import streamlit as st
-import tensorflow as tf
 import numpy as np
 import pandas as pd
 import plotly.express as px
@@ -13,8 +12,8 @@ import requests
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from src.prediction import predict, get_model
-from src.model import retrain_model, MODEL_PATH
+API_URL = os.environ.get("API_URL", "https://mlops-summative-lze9.onrender.com")
+MODEL_PATH = os.environ.get("MODEL_PATH", "models/plant_disease_model.h5")
 
 DATA_DIR = os.environ.get("DATA_DIR", "data/train")
 CLASS_NAMES = ["Potato___Early_blight", "Potato___Late_blight", "Potato___healthy"]
@@ -25,18 +24,18 @@ st.title("Potato Leaf Disease Classifier")
 
 with st.sidebar:
     st.header("Model Status")
-    model_exists = os.path.exists(MODEL_PATH)
-    if model_exists:
-        mtime = os.path.getmtime(MODEL_PATH)
-        last_trained = time.strftime("%Y-%m-%d %H:%M", time.localtime(mtime))
-        size_mb = round(os.path.getsize(MODEL_PATH) / (1024 * 1024), 2)
-        st.success("Model Online")
-        st.metric("Last Trained", last_trained)
-        st.metric("Model Size", f"{size_mb} MB")
-        st.metric("Classes", len(CLASS_NAMES))
-    else:
-        st.error("Model Not Found")
-
+    try:
+        response = requests.get(f"{API_URL}/api/status", timeout=5)
+        if response.status_code == 200:
+            info = response.json()
+            st.success("Model Online")
+            st.metric("Last Trained", info.get("last_trained", "N/A"))
+            st.metric("Model Size", info.get("model_size", "N/A"))
+            st.metric("Classes", info.get("classes", 3))
+        else:
+            st.error("Model Not Found")
+    except:
+        st.warning("Backend unreachable")
     st.divider()
     st.caption("Potato Disease MLOps Pipeline")
 
@@ -55,33 +54,35 @@ with tab1:
         with col2:
             with st.spinner("Analyzing..."):
                 try:
-                    result = predict(uploaded.read())
-
-                    label = result["class"].replace("___", " ")
-                    conf = result["confidence"]
-
-                    if "healthy" in result["class"].lower():
-                        st.success(f"Prediction: {label}")
+                    files = {"file": (uploaded.name, uploaded.read(), "image/jpeg")}
+                    response = requests.post(f"{API_URL}/api/predict", files=files)
+                    if response.status_code == 200:
+                        result = response.json()
+                        label = result["class"].replace("___", " ")
+                        conf = result["confidence"]
+                        if "healthy" in result["class"].lower():
+                            st.success(f"Prediction: {label}")
+                        else:
+                            st.error(f"Prediction: {label}")
+                        st.metric("Confidence", f"{conf}%")
+                        st.divider()
+                        st.write("**All Class Probabilities:**")
+                        probs = result["all_probabilities"]
+                        fig = px.bar(
+                            x=list(probs.values()),
+                            y=CLASS_LABELS,
+                            orientation='h',
+                            labels={"x": "Confidence (%)", "y": "Class"},
+                            color=list(probs.values()),
+                            color_continuous_scale="RdYlGn"
+                        )
+                        fig.update_layout(showlegend=False, coloraxis_showscale=False, height=200)
+                        st.plotly_chart(fig, use_container_width=True)
                     else:
-                        st.error(f"Prediction: {label}")
-
-                    st.metric("Confidence", f"{conf}%")
-                    st.divider()
-                    st.write("**All Class Probabilities:**")
-                    probs = result["all_probabilities"]
-                    fig = px.bar(
-                        x=list(probs.values()),
-                        y=CLASS_LABELS,
-                        orientation='h',
-                        labels={"x": "Confidence (%)", "y": "Class"},
-                        color=list(probs.values()),
-                        color_continuous_scale="RdYlGn"
-                    )
-                    fig.update_layout(showlegend=False, coloraxis_showscale=False, height=200)
-                    st.plotly_chart(fig, use_container_width=True)
+                        st.error(f"Prediction failed: {response.text}")
                 except Exception as e:
                     st.error(f"Prediction failed: {e}")
-                    st.info("If the model was not found, please go to the 'Retrain' tab and train it first.")
+                    st.info("Make sure the backend API is running.")
 
 # ── Tab 2: Visualizations ──────────────────────────────────────────────────────
 with tab2:
