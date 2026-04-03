@@ -6,8 +6,7 @@ import plotly.graph_objects as go
 import os
 import requests
 
-# Force internal container routing by default (Render only exposes one public port)
-API_URL = os.environ.get("API_URL", "http://127.0.0.1:8000")
+API_URL = os.environ.get("API_URL", "https://mlops-summative-lze9.onrender.com")
 DATA_DIR = os.environ.get("DATA_DIR", "data/train")
 CLASS_NAMES = ["Potato___Early_blight", "Potato___Late_blight", "Potato___healthy"]
 CLASS_LABELS = ["Early Blight", "Late Blight", "Healthy"]
