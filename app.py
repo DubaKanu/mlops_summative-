@@ -6,7 +6,7 @@ import plotly.graph_objects as go
 import os
 import requests
 
-API_URL = os.environ.get("API_URL", "http://localhost:8000")
+API_URL = os.environ.get("API_URL", "https://mlops-summative-lze9.onrender.com")
 DATA_DIR = os.environ.get("DATA_DIR", "data/train")
 CLASS_NAMES = ["Potato___Early_blight", "Potato___Late_blight", "Potato___healthy"]
 CLASS_LABELS = ["Early Blight", "Late Blight", "Healthy"]
@@ -47,7 +47,7 @@ with tab1:
         col1, col2 = st.columns(2)
         file_bytes = uploaded.read()
         with col1:
-            st.image(file_bytes, caption="Uploaded Image", use_column_width=True)
+            st.image(file_bytes, caption="Uploaded Image", use_container_width=True)
 
         with col2:
             with st.spinner("Analyzing..."):
