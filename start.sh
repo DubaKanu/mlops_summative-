@@ -24,7 +24,9 @@ if [ ! -f /var/data/models/plant_disease_model.h5 ]; then
     fi
 fi
 
-# Start FastAPI background API for model retraining
+# Start FastAPI backend
+export MODEL_PATH=/var/data/models/plant_disease_model.h5
+export DATA_DIR=/var/data/train
 uvicorn api:app --host 0.0.0.0 --port 8000 &
 
 # Start Streamlit application
