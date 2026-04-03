@@ -45,7 +45,7 @@ with tab1:
         col1, col2 = st.columns(2)
         file_bytes = uploaded.read()
         with col1:
-            st.image(file_bytes, caption="Uploaded Image", use_container_width=True)
+            st.image(file_bytes, caption="Uploaded Image", use_column_width=True)
 
         with col2:
             with st.spinner("Analyzing..."):
