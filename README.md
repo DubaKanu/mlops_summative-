@@ -6,7 +6,7 @@ An end-to-end MLOps pipeline that classifies potato leaf diseases (Early Blight,
 ---
 
 ## Video Demo
-[YouTube Demo Link — add your link here]
+[https://youtu.be/MfrZZa2GRTw](https://youtu.be/MfrZZa2GRTw)
 
 ## Live URL
 [https://mlops-summative-ui.onrender.com](https://mlops-summative-ui.onrender.com)
