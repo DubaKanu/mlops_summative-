@@ -3,15 +3,9 @@ import numpy as np
 import pandas as pd
 import plotly.express as px
 import os
-import time
-import threading
+import requests
 
-import sys
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-
-from src.prediction import predict, MODEL_PATH
-from src.model import retrain_model
-
+API_URL = os.environ.get("API_URL", "https://mlops-summative-lze9.onrender.com").rstrip("/")
 DATA_DIR = os.environ.get("DATA_DIR", "data/train")
 CLASS_NAMES = ["Potato___Early_blight", "Potato___Late_blight", "Potato___healthy"]
 CLASS_LABELS = ["Early Blight", "Late Blight", "Healthy"]
@@ -21,16 +15,21 @@ st.title("Potato Leaf Disease Classifier")
 
 with st.sidebar:
     st.header("Model Status")
-    if os.path.exists(MODEL_PATH):
-        mtime = os.path.getmtime(MODEL_PATH)
-        last_trained = time.strftime("%Y-%m-%d %H:%M", time.localtime(mtime))
-        size_mb = round(os.path.getsize(MODEL_PATH) / (1024 * 1024), 2)
-        st.success("Model Online")
-        st.metric("Last Trained", last_trained)
-        st.metric("Model Size", f"{size_mb} MB")
-        st.metric("Classes", len(CLASS_NAMES))
-    else:
-        st.error("Model Not Found")
+    try:
+        resp = requests.get(f"{API_URL}/api/status", timeout=10)
+        if resp.status_code == 200:
+            info = resp.json()
+            if info.get("status") == "online":
+                st.success("Model Online")
+                st.metric("Last Trained", info.get("last_trained", "N/A"))
+                st.metric("Model Size", info.get("model_size", "N/A"))
+                st.metric("Classes", info.get("classes", 3))
+            else:
+                st.error("Model Not Found")
+        else:
+            st.error("Model Not Found")
+    except Exception:
+        st.warning("Backend unreachable")
     st.divider()
     st.caption("Potato Disease MLOps Pipeline")
 
@@ -46,31 +45,35 @@ with tab1:
         file_bytes = uploaded.read()
         with col1:
             st.image(file_bytes, caption="Uploaded Image", use_column_width=True)
-
         with col2:
             with st.spinner("Analyzing..."):
                 try:
-                    result = predict(file_bytes)
-                    label = result["class"].replace("___", " ")
-                    conf = result["confidence"]
-                    if "healthy" in result["class"].lower():
-                        st.success(f"Prediction: {label}")
+                    files = {"file": (uploaded.name, file_bytes, "image/jpeg")}
+                    resp = requests.post(f"{API_URL}/api/predict", files=files, timeout=30)
+                    if resp.status_code == 200:
+                        result = resp.json()
+                        label = result["class"].replace("___", " ")
+                        conf = result["confidence"]
+                        if "healthy" in result["class"].lower():
+                            st.success(f"Prediction: {label}")
+                        else:
+                            st.error(f"Prediction: {label}")
+                        st.metric("Confidence", f"{conf}%")
+                        st.divider()
+                        st.write("**All Class Probabilities:**")
+                        probs = result["all_probabilities"]
+                        fig = px.bar(
+                            x=list(probs.values()),
+                            y=CLASS_LABELS,
+                            orientation='h',
+                            labels={"x": "Confidence (%)", "y": "Class"},
+                            color=list(probs.values()),
+                            color_continuous_scale="RdYlGn"
+                        )
+                        fig.update_layout(showlegend=False, coloraxis_showscale=False, height=200)
+                        st.plotly_chart(fig, use_container_width=True)
                     else:
-                        st.error(f"Prediction: {label}")
-                    st.metric("Confidence", f"{conf}%")
-                    st.divider()
-                    st.write("**All Class Probabilities:**")
-                    probs = result["all_probabilities"]
-                    fig = px.bar(
-                        x=list(probs.values()),
-                        y=CLASS_LABELS,
-                        orientation='h',
-                        labels={"x": "Confidence (%)", "y": "Class"},
-                        color=list(probs.values()),
-                        color_continuous_scale="RdYlGn"
-                    )
-                    fig.update_layout(showlegend=False, coloraxis_showscale=False, height=200)
-                    st.plotly_chart(fig, use_container_width=True)
+                        st.error(f"Prediction failed: {resp.text}")
                 except Exception as e:
                     st.error(f"Prediction failed: {e}")
 
@@ -133,11 +136,8 @@ with tab2:
             np.random.normal(91, 5, 100).clip(70, 100),
         ])
     })
-    fig3 = px.box(
-        sim_data, x="Class", y="Confidence (%)",
-        color="Class",
-        color_discrete_sequence=px.colors.qualitative.Set1
-    )
+    fig3 = px.box(sim_data, x="Class", y="Confidence (%)", color="Class",
+                  color_discrete_sequence=px.colors.qualitative.Set1)
     fig3.update_layout(showlegend=False)
     st.plotly_chart(fig3, use_container_width=True)
     st.caption(
@@ -189,8 +189,11 @@ with tab4:
     if st.button("Start Retraining", type="primary"):
         with st.spinner("Retraining in progress... this may take a few minutes."):
             try:
-                retrain_model(DATA_DIR, epochs=epochs)
-                st.success("Retraining complete! The model has been updated.")
-                st.rerun()
+                resp = requests.post(f"{API_URL}/api/retrain", json={"epochs": epochs}, timeout=60)
+                if resp.status_code == 200:
+                    st.success(resp.json().get("message", "Retraining started."))
+                    st.info("The model will reload automatically on the next prediction.")
+                else:
+                    st.error(f"Failed to trigger retraining: {resp.text}")
             except Exception as e:
                 st.error(f"Retraining failed: {e}")
