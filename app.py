@@ -6,7 +6,7 @@ import plotly.graph_objects as go
 import os
 import requests
 
-API_URL = os.environ.get("API_URL", "https://mlops-summative-lze9.onrender.com")
+API_URL = os.environ.get("API_URL", "https://mlops-summative-lze9.onrender.com").rstrip("/")
 DATA_DIR = os.environ.get("DATA_DIR", "data/train")
 CLASS_NAMES = ["Potato___Early_blight", "Potato___Late_blight", "Potato___healthy"]
 CLASS_LABELS = ["Early Blight", "Late Blight", "Healthy"]
@@ -28,11 +28,9 @@ with st.sidebar:
             else:
                 st.error("Model Not Found")
         else:
-            st.error(f"Backend Error: {response.status_code}")
-    except requests.exceptions.ConnectionError:
-        st.warning("⏳ Backend is starting up... please wait a few seconds and refresh.")
-    except Exception as e:
-        st.warning(f"Backend unreachable: {e}")
+            st.warning("Backend redeploying — please refresh in 1 minute.")
+    except Exception:
+        st.warning("Backend waking up — please refresh in 30 seconds.")
     st.divider()
     st.caption("Potato Disease MLOps Pipeline")
 
