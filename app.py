@@ -2,11 +2,16 @@ import streamlit as st
 import numpy as np
 import pandas as pd
 import plotly.express as px
-import plotly.graph_objects as go
 import os
-import requests
+import time
+import threading
 
-API_URL = os.environ.get("API_URL", "http://localhost:8000").rstrip("/")
+import sys
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
+from src.prediction import predict, MODEL_PATH
+from src.model import retrain_model
+
 DATA_DIR = os.environ.get("DATA_DIR", "data/train")
 CLASS_NAMES = ["Potato___Early_blight", "Potato___Late_blight", "Potato___healthy"]
 CLASS_LABELS = ["Early Blight", "Late Blight", "Healthy"]
@@ -16,21 +21,16 @@ st.title("Potato Leaf Disease Classifier")
 
 with st.sidebar:
     st.header("Model Status")
-    try:
-        response = requests.get(f"{API_URL}/api/status", timeout=15)
-        if response.status_code == 200:
-            info = response.json()
-            if info.get("status") == "online":
-                st.success("Model Online")
-                st.metric("Last Trained", info.get("last_trained", "N/A"))
-                st.metric("Model Size", info.get("model_size", "N/A"))
-                st.metric("Classes", info.get("classes", 3))
-            else:
-                st.error("Model Not Found")
-        else:
-            st.warning("Backend redeploying — please refresh in 1 minute.")
-    except Exception:
-        st.warning("Backend waking up — please refresh in 30 seconds.")
+    if os.path.exists(MODEL_PATH):
+        mtime = os.path.getmtime(MODEL_PATH)
+        last_trained = time.strftime("%Y-%m-%d %H:%M", time.localtime(mtime))
+        size_mb = round(os.path.getsize(MODEL_PATH) / (1024 * 1024), 2)
+        st.success("Model Online")
+        st.metric("Last Trained", last_trained)
+        st.metric("Model Size", f"{size_mb} MB")
+        st.metric("Classes", len(CLASS_NAMES))
+    else:
+        st.error("Model Not Found")
     st.divider()
     st.caption("Potato Disease MLOps Pipeline")
 
@@ -50,43 +50,34 @@ with tab1:
         with col2:
             with st.spinner("Analyzing..."):
                 try:
-                    files = {"file": (uploaded.name, file_bytes, "image/jpeg")}
-                    response = requests.post(f"{API_URL}/api/predict", files=files, timeout=30)
-                    if response.status_code == 200:
-                        result = response.json()
-                        label = result["class"].replace("___", " ")
-                        conf = result["confidence"]
-                        if "healthy" in result["class"].lower():
-                            st.success(f"Prediction: {label}")
-                        else:
-                            st.error(f"Prediction: {label}")
-                        st.metric("Confidence", f"{conf}%")
-                        st.divider()
-                        st.write("**All Class Probabilities:**")
-                        probs = result["all_probabilities"]
-                        fig = px.bar(
-                            x=list(probs.values()),
-                            y=CLASS_LABELS,
-                            orientation='h',
-                            labels={"x": "Confidence (%)", "y": "Class"},
-                            color=list(probs.values()),
-                            color_continuous_scale="RdYlGn"
-                        )
-                        fig.update_layout(showlegend=False, coloraxis_showscale=False, height=200)
-                        st.plotly_chart(fig, use_container_width=True)
+                    result = predict(file_bytes)
+                    label = result["class"].replace("___", " ")
+                    conf = result["confidence"]
+                    if "healthy" in result["class"].lower():
+                        st.success(f"Prediction: {label}")
                     else:
-                        st.error(f"Prediction failed: {response.text}")
-                except requests.exceptions.ConnectionError:
-                    st.error("⏳ Backend API is unreachable. It may still be loading TensorFlow. Please wait a few seconds and try again.")
+                        st.error(f"Prediction: {label}")
+                    st.metric("Confidence", f"{conf}%")
+                    st.divider()
+                    st.write("**All Class Probabilities:**")
+                    probs = result["all_probabilities"]
+                    fig = px.bar(
+                        x=list(probs.values()),
+                        y=CLASS_LABELS,
+                        orientation='h',
+                        labels={"x": "Confidence (%)", "y": "Class"},
+                        color=list(probs.values()),
+                        color_continuous_scale="RdYlGn"
+                    )
+                    fig.update_layout(showlegend=False, coloraxis_showscale=False, height=200)
+                    st.plotly_chart(fig, use_container_width=True)
                 except Exception as e:
                     st.error(f"Prediction failed: {e}")
-                    st.info("Make sure the backend API is running without errors.")
 
 # ── Tab 2: Visualizations ──────────────────────────────────────────────────────
 with tab2:
     st.subheader("Dataset Insights")
 
-    # Count images per class
     class_counts = {}
     for cls in CLASS_NAMES:
         cls_path = os.path.join(DATA_DIR, cls)
@@ -99,7 +90,6 @@ with tab2:
 
     col1, col2 = st.columns(2)
 
-    # Feature 1: Class Distribution
     with col1:
         st.markdown("**Feature 1 — Class Distribution**")
         fig1 = px.pie(
@@ -116,7 +106,6 @@ with tab2:
             "A balanced dataset means the model won't be biased toward any single class."
         )
 
-    # Feature 2: Image count bar chart
     with col2:
         st.markdown("**Feature 2 — Images per Class**")
         fig2 = px.bar(
@@ -134,7 +123,6 @@ with tab2:
             "to learn distinguishing features like lesion patterns and leaf texture."
         )
 
-    # Feature 3: Simulated confidence distribution across classes
     st.markdown("**Feature 3 — Model Confidence Distribution by Class**")
     np.random.seed(42)
     sim_data = pd.DataFrame({
@@ -201,11 +189,8 @@ with tab4:
     if st.button("Start Retraining", type="primary"):
         with st.spinner("Retraining in progress... this may take a few minutes."):
             try:
-                response = requests.post(f"{API_URL}/api/retrain", json={"epochs": epochs}, timeout=60)
-                if response.status_code == 200:
-                    st.success(response.json()["message"])
-                    st.info("You can monitor the server logs to see when training finishes. The model cache will refresh automatically on the next prediction.")
-                else:
-                    st.error(f"Failed to trigger retraining: {response.text}")
+                retrain_model(DATA_DIR, epochs=epochs)
+                st.success("Retraining complete! The model has been updated.")
+                st.rerun()
             except Exception as e:
                 st.error(f"Retraining failed: {e}")
