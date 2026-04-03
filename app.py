@@ -6,7 +6,7 @@ import plotly.graph_objects as go
 import os
 import requests
 
-API_URL = os.environ.get("API_URL", "https://mlops-summative-lze9.onrender.com").rstrip("/")
+API_URL = os.environ.get("API_URL", "http://localhost:8000").rstrip("/")
 DATA_DIR = os.environ.get("DATA_DIR", "data/train")
 CLASS_NAMES = ["Potato___Early_blight", "Potato___Late_blight", "Potato___healthy"]
 CLASS_LABELS = ["Early Blight", "Late Blight", "Healthy"]

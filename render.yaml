@@ -3,19 +3,10 @@ services:
     name: mlops-summative-ui
     runtime: docker
     dockerfilePath: ./Dockerfile
-    startCommand: streamlit run app.py --server.port=10000 --server.address=0.0.0.0
+    startCommand: ./start.sh
     envVars:
       - key: API_URL
-        value: https://mlops-summative-lze9.onrender.com
-      - key: DATA_DIR
-        value: data/train
-
-  - type: web
-    name: mlops-summative-lze9
-    runtime: docker
-    dockerfilePath: ./Dockerfile
-    startCommand: uvicorn api:app --host 0.0.0.0 --port 10000
-    envVars:
+        value: http://localhost:8000
       - key: MODEL_PATH
         value: models/plant_disease_model.h5
       - key: DATA_DIR
